@@ -1,3 +1,4 @@
+# Task 1: Cleanup
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -26,6 +27,7 @@ spec:
           rm -rf "${WORKSPACE_SOURCE_PATH}"/..?*
         fi
 ---
+# Task 2: Nose test + flake8
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -48,13 +50,14 @@ spec:
         set -e
         python -m pip install --upgrade pip wheel
         pip install -r requirements.txt
-        
+        flake8 --ignore=E501 .
         nosetests $(params.args)
 ---
+# Task 3: Apply Kubernetes manifests
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: deploy
+  name: deploy-manifests
 spec:
   description: Deploy Kubernetes manifests using `oc apply`.
   params:
@@ -70,10 +73,11 @@ spec:
         #!/bin/sh
         oc apply -f $(workspaces.source.path)/$(params.manifest_dir)
 ---
+# Task 4: Deploy app using oc create deployment
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: deploy
+  name: deploy-app
 spec:
   description: Deploy application to OpenShift using oc client.
   params:
@@ -88,4 +92,7 @@ spec:
       image: registry.redhat.io/openshift4/cli:latest
       script: |
         #!/bin/sh
-        oc create deployment $(params.app-name) --image=$(params.build-image) --dry-run=client -o yaml | oc apply -f -
+        echo "Deploying $(params.app-name) using image $(params.build-image)"
+        oc create deployment $(params.app-name) \
+        --image=$(params.build-image) \
+        --dry-run=client -o yaml | oc apply -f -
