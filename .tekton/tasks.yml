@@ -64,7 +64,7 @@ spec:
     - name: source
   steps:
     - name: apply-manifests
-image: registry.redhat.io/openshift4/cli:latest
+      image: registry.redhat.io/openshift4/cli:latest
       script: |
         #!/bin/sh
         oc apply -f $(workspaces.source.path)/$(params.manifest_dir)
